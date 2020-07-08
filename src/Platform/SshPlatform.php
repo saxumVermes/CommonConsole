@@ -57,7 +57,7 @@ class SshPlatform extends PlatformBase {
    */
   public function execute(Command $command, InputInterface $input, OutputInterface $output) : void {
     $sshUrl = "{$this->get('ssh.user')}@{$this->get('ssh.url')}";
-    $process = Process::fromShellCommandline("ssh $sshUrl '{$this->get('ssh.remote_vendor_dir')}/bin/commoncli {$input->__toString()}'");
+    $process = Process::fromShellCommandline("ssh $sshUrl '{$this->get('ssh.remote_dir')}/site.sh rpc {$input->__toString()}'", '/app');
     $this->runner->run($process, $this, $output);
   }
 
