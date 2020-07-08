@@ -56,7 +56,7 @@ class PlatformSites extends Command implements PlatformCommandInterface {
       $table->render();
     }
     else {
-      $output->writeln(sprintf('<error>No sites found for the specified platform %s</error>', $this->platformAliases['source']));
+      $output->writeln(sprintf('<error>No sites found for the specified platform %s</error>', $platform->getAlias()));
     }
   }
 
