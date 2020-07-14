@@ -112,7 +112,7 @@ class PlatformArgumentsEvent extends Event {
    * 
    * @throws \Exception
    */
-  protected function setDecoratedInput(array $arguments): void {
+  public function setDecoratedInput(array $arguments): void {
     $args = $this->input->getArguments();
     $options = $this->input->getOptions();
 
