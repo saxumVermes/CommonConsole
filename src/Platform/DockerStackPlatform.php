@@ -54,10 +54,10 @@ class DockerStackPlatform extends PlatformBase implements PlatformSitesInterface
    */
   public function getPlatformSites(): array {
     $services = explode(',', $this->get(static::CONFIG_SERVICES));
-    $location = $this->get(static::CONFIG_COMPOSE_FILE_PATH);
+    $location = basename($this->get(static::CONFIG_COMPOSE_FILE_PATH));
     $sites = [];
     foreach ($services as $service) {
-      $uriProcess = Process::fromShellCommandline("ssh saxum@{$this->ip} \"cd $location; /usr/local/bin/docker-compose config | grep -A 11 $service | grep hostname | grep -v database | awk '{print $2}' | cut -d : -f 2\"");
+      $uriProcess = Process::fromShellCommandline("docker exec {$location}_{$service}_1 /bin/bash -c 'source /var/www/html/.sites; echo $$service'");
       $uriProcess->run();
       $uri = trim($uriProcess->getOutput());
       $sites[trim($service)] = $uri;
@@ -70,12 +70,12 @@ class DockerStackPlatform extends PlatformBase implements PlatformSitesInterface
    * {@inheritdoc}
    */
   public function execute(Command $command, InputInterface $input, OutputInterface $output) : void {
-    $location = $this->get(static::CONFIG_COMPOSE_FILE_PATH);
+    $location = basename($this->get(static::CONFIG_COMPOSE_FILE_PATH));
     $services = explode(',', $this->get(static::CONFIG_SERVICES));
     $sites = $this->getPlatformSites();
     foreach ($services as $service) {
       $output->writeln("Executed on '$service'");
-      $process = Process::fromShellCommandline("ssh saxum@{$this->ip} \"export PATH=$PATH:/usr/local/bin; cd $location; docker-compose exec -T $service ./vendor/bin/commoncli --uri {$sites[$service]} {$input->__toString()}\"");
+      $process = Process::fromShellCommandline("docker exec {$location}_{$service}_1 ./vendor/bin/commoncli --uri {$sites[$service]} {$input->__toString()}");
       $this->runner->run($process, $this, $output);
     }
   }
