@@ -3,11 +3,17 @@
 namespace EclipseGc\CommonConsole\Platform;
 
 use Consolidation\Config\Config;
+use Consolidation\Config\ConfigInterface;
+use EclipseGc\CommonConsole\Event\Traits\PlatformArgumentInjectionTrait;
+use EclipseGc\CommonConsole\PlatformDependencyInjectionInterface;
+use EclipseGc\CommonConsole\ProcessRunner;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Process\Process;
 
 /**
@@ -15,7 +21,9 @@ use Symfony\Component\Process\Process;
  *
  * @package EclipseGc\CommonConsole\Platform
  */
-class DockerStackPlatform extends PlatformBase implements PlatformSitesInterface {
+class DockerStackPlatform extends PlatformBase implements PlatformSitesInterface, PlatformDependencyInjectionInterface {
+
+  use PlatformArgumentInjectionTrait;
 
   /**
    * Services added to the platform.
@@ -27,13 +35,31 @@ class DockerStackPlatform extends PlatformBase implements PlatformSitesInterface
    */
   public const CONFIG_COMPOSE_FILE_PATH = 'docker.compose_file';
 
-  private $ip = '10.199.198.88';
+  /**
+   * DockerStackPlatform constructor.
+   *
+   * @param \Consolidation\Config\ConfigInterface $config
+   * @param \EclipseGc\CommonConsole\ProcessRunner $runner
+   * @param \EclipseGc\CommonConsole\Platform\PlatformStorage $storage
+   * @param \Symfony\Component\EventDispatcher\EventDispatcherInterface $dispatcher
+   */
+  public function __construct(ConfigInterface $config, ProcessRunner $runner, PlatformStorage $storage, EventDispatcherInterface $dispatcher) {
+    parent::__construct($config, $runner, $storage);
+    $this->dispatcher = $dispatcher;
+  }
   
   /**
    * {@inheritdoc}
    */
   public static function getPlatformId(): string {
     return 'DockerStack';
+  }
+  
+  /**
+   * {@inheritDoc}
+   */
+  public static function create(ContainerInterface $container, ConfigInterface $config, ProcessRunner $runner, PlatformStorage $storage): self {
+    return new static($config, $runner, $storage, $container->get('event_dispatcher'));
   }
 
   /**
@@ -73,9 +99,11 @@ class DockerStackPlatform extends PlatformBase implements PlatformSitesInterface
     $location = basename($this->get(static::CONFIG_COMPOSE_FILE_PATH));
     $services = explode(',', $this->get(static::CONFIG_SERVICES));
     $sites = $this->getPlatformSites();
+    $args = $this->dispatchPlatformArgumentInjectionEvent($input, $sites, $command->getName());
     foreach ($services as $service) {
+      $site = $sites[$service];
       $output->writeln("Executed on '$service'");
-      $process = Process::fromShellCommandline("docker exec {$location}_{$service}_1 ./vendor/bin/commoncli --uri {$sites[$service]} {$input->__toString()}");
+      $process = Process::fromShellCommandline("docker exec {$location}_{$service}_1 ./vendor/bin/commoncli --uri $site {$args[$site]->__toString()}");
       $this->runner->run($process, $this, $output);
     }
   }
