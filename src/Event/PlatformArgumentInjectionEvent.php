@@ -7,15 +7,15 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Contracts\EventDispatcher\Event;
 
 /**
- * Class PlatformArgumentsEvent.
- * 
+ * Class PlatformArgumentInjectionEvent.
+ *
  * Dispatched right before a command is executed on a platform.
- * 
- * @see \EclipseGc\CommonConsole\Event\Traits\PlatformArgumentsTrait
+ *
+ * @see \EclipseGc\CommonConsole\Event\Traits\PlatformArgumentInjectionTrait
  *
  * @package EclipseGc\CommonConsole\Event
  */
-class PlatformArgumentsEvent extends Event {
+class PlatformArgumentInjectionEvent extends Event {
 
   /**
    * The command's input object.
@@ -25,7 +25,7 @@ class PlatformArgumentsEvent extends Event {
   protected $input;
 
   /**
-   * The list of sites in a plaform.
+   * The list of sites in a platform.
    * 
    * @var array 
    */
@@ -46,7 +46,7 @@ class PlatformArgumentsEvent extends Event {
   protected $decoratedInput;
 
   /**
-   * PlatformArgumentsEvent constructor.
+   * PlatformArgumentInjectionEvent constructor.
    *
    * @param \Symfony\Component\Console\Input\InputInterface $input
    *   The current command's input object.
@@ -69,6 +69,16 @@ class PlatformArgumentsEvent extends Event {
    */
   public function getSites(): array {
     return $this->sites;
+  }
+
+  /**
+   * Returns the name of the current command.
+   *
+   * @return string
+   *   The name of the command.
+   */
+  public function getCommandName(): string {
+    return $this->commandName;
   }
 
   /**
@@ -106,15 +116,16 @@ class PlatformArgumentsEvent extends Event {
    *
    * @param array $arguments
    *   An associative array containing the sites and the customized input.
-   * 
-   * @return array
-   *   The resolved list of sites and input values.
-   * 
+   *
    * @throws \Exception
    */
   public function setDecoratedInput(array $arguments): void {
     $args = $this->input->getArguments();
     $options = $this->input->getOptions();
+    foreach ($options as $key => $val) {
+      $options["--$key"] = $val;
+      unset($options[$key]);
+    }
 
     $res = [];
     foreach ($arguments as $site => $params) {
@@ -154,5 +165,5 @@ class PlatformArgumentsEvent extends Event {
   protected function isOption(string $arg): bool {
     return (bool) preg_match('/-(-)?\w.*/', $arg);
   }
-  
+
 }
