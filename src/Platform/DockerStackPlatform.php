@@ -99,7 +99,7 @@ class DockerStackPlatform extends PlatformBase implements PlatformSitesInterface
     $location = basename($this->get(static::CONFIG_COMPOSE_FILE_PATH));
     $services = explode(',', $this->get(static::CONFIG_SERVICES));
     $sites = $this->getPlatformSites();
-    $args = $this->dispatchPlatformArgumentInjectionEvent($input, $sites, $command->getName());
+    $args = $this->dispatchPlatformArgumentInjectionEvent($input, $sites, $command);
     foreach ($services as $service) {
       $site = $sites[$service];
       $output->writeln("Executed on '$service'");
